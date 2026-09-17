@@ -1,0 +1,70 @@
+# ============================================================
+#  Learn-DeepAgents
+#  提交到远程仓库时排除以下内容。
+#  ⚠️ 第 1 节是安全红线：.env 内含真实 API Key，绝不允许入库。
+# ============================================================
+
+# --- 1. 凭据（红线）----------------------------------------
+# 真实密钥只存在于本地 .env，模板 .env.example 保留入库。
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+secrets.toml
+
+# --- 2. 依赖与虚拟环境 -------------------------------------
+.venv/
+venv/
+env/
+.uv/
+node_modules/
+.pnpm-store/
+
+# --- 3. 运行时数据 -----------------------------------------
+# agentseek 的检查点库可达数百 MB，且含完整对话内容
+*.db
+*.db-journal
+*.db-wal
+*.sqlite
+*.sqlite3
+.agentseek/seekdb/
+.cache/
+
+# --- 4. Python 产物 ----------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+coverage.xml
+htmlcov/
+
+# --- 5. 前端产物 -------------------------------------------
+frontend/dist/
+frontend/.vite/
+.vite/
+*.tsbuildinfo
+
+# --- 6. IDE / 编辑器 ---------------------------------------
+.idea/
+.vscode/
+*.iml
+*.swp
+*~
+
+# --- 7. 助手工作区状态 -------------------------------------
+# 含本机路径、环境快照等个人化信息，默认不公开。
+# 如需把学习日志一并公开，删掉下面这一行即可：
+.workbuddy/
+
+# --- 8. 操作系统 -------------------------------------------
+Thumbs.db
+desktop.ini
+.DS_Store
