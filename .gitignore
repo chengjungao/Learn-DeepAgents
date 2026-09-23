@@ -51,6 +51,10 @@ frontend/dist/
 frontend/.vite/
 .vite/
 *.tsbuildinfo
+# 注意：ch04 文档 Agent 的产物目录 frontend/public/work/ 由子目录
+# research_deepagent/frontend/.gitignore 里的一条 `work/` 忽略——
+# 根级写 "frontend/public/work/" 只对仓库根的 frontend/ 生效，管不到
+# research_deepagent/frontend/ 这类嵌套路径。教训记在 Task4 笔记里。
 
 # --- 6. IDE / 编辑器 ---------------------------------------
 .idea/

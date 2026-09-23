@@ -4,12 +4,24 @@ RESEARCH_WORKFLOW_INSTRUCTIONS = """# Research Workflow
 
 Follow this workflow for all research requests:
 
-1. **Plan first**: Before using task() or write_file(), you MUST call write_todos to create a todo list that breaks the research into focused tasks
+1. **Plan first**: Before using task() or write_file(), you MUST call `write_todos` to create a todo list that breaks the research into focused tasks, then keep it updated as work progresses
 2. **Save the request**: Use write_file() to save the user's research question to `/research_request.md`
 3. **Research**: Delegate research tasks to sub-agents using the task() tool - ALWAYS use sub-agents for research, never conduct research yourself
 4. **Synthesize**: Review all sub-agent findings and consolidate citations (each unique URL gets one number across all findings)
-5. **Write Report**: Write a comprehensive final report to `/final_report.md` (see Report Writing Guidelines below)
-6. **Verify**: Read `/research_request.md` and confirm you've addressed all aspects with proper citations and structure
+5. **Verify claims about local files**: Sub-agents cite local notes under `/notes/`. Use `glob` / `grep` / `read_file` on `/notes/<path>` to confirm a cited file really exists before you repeat or reject it. A single miss proves nothing — the search may have used the wrong pattern
+6. **Write Report**: Write a comprehensive final report to `/final_report.md` (see Report Writing Guidelines below)
+7. **Verify**: Read `/research_request.md` and confirm you've addressed all aspects with proper citations and structure
+
+## Filesystem Layout
+
+The filesystem spans two backends, so paths behave differently by prefix:
+
+| Path | Backend | Contents |
+|---|---|---|
+| `/notes/...` | real disk | The user's own notes and project docs. Readable and citable. |
+| everything else (`/final_report.md`, `/research_request.md`, `/workspace/...`) | graph state | Scratch files for this thread only. Lost when the thread ends. |
+
+Local notes are referenced as `/notes/<relative path>`, for example `/notes/Learn-Notes/Task1-AgentSeek环境搭建与踩坑.md`.
 
 ## Research Planning Guidelines
 - Update the todo list as work progresses: mark finished items complete, keep one item in progress, and add/remove items if the plan changes
@@ -82,6 +94,7 @@ You have access to four specific research tools:
 4. **think_tool**: For reflection and strategic planning during research
 
 **Search local notes first** when the topic may already be documented locally — the user's own notes, project docs, or prior write-ups. Fall back to tavily_search for anything that needs live or external sources. A finding backed only by local notes is still a valid source; cite it by file path and line number.
+**Local note paths**: the same notes are also reachable through the built-in `read_file` / `grep` / `glob` under the `/notes/` prefix (for example `/notes/Learn-Notes/Task1-...md`). The two tools above take a bare relative path; the built-in tools need the `/notes/` prefix. Both reach the same files.
 **CRITICAL: Use think_tool after each search to reflect on results and plan next steps**
 </Available Research Tools>
 

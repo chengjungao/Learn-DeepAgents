@@ -153,8 +153,14 @@ def think_tool(reflection: str) -> str:
 # ===========================================================================
 
 NOTES_ROOT_ENV = "NOTES_ROOT"
-DEFAULT_NOTES_ROOT = r"D:\Works\DeepAgents学习"
+NOTES_ROOT_DEFAULT = r"D:\Works\DeepAgents学习"
 
+# agent.py 把笔记目录挂到 CompositeBackend 的 /notes/ 前缀下，
+# 这里同步导出挂载点，供提示词与工具描述引用，避免两边各写一份字符串。
+NOTES_MOUNT = "/notes/"
+
+# 超时保护：deepagents 的文件工具扫到超大目录会超时并返回 partial 结果
+# （实测 root_dir 指向仓库根时 grep 15s 超时）。工具目录必须收窄。
 # 遍历时跳过的目录名（精确匹配，不做递归猜测）
 SKIP_DIR_NAMES = {
     ".venv",
@@ -183,7 +189,7 @@ SNIPPET_WIDTH = 180
 
 def _resolve_notes_root(root_dir: str | None = None) -> Path:
     """把 root_dir / 环境变量 / 内置默认值解析成一个绝对路径。"""
-    raw = (root_dir or "").strip() or os.getenv(NOTES_ROOT_ENV) or DEFAULT_NOTES_ROOT
+    raw = (root_dir or "").strip() or os.getenv(NOTES_ROOT_ENV) or NOTES_ROOT_DEFAULT
     return Path(raw).expanduser().resolve()
 
 

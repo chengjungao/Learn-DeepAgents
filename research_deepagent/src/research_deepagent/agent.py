@@ -14,11 +14,14 @@ from __future__ import annotations
 import os
 import warnings
 from datetime import datetime
+from pathlib import Path
 
 from deepagents import create_deep_agent
+from deepagents.backends import CompositeBackend, FilesystemBackend, StateBackend
 from dotenv import load_dotenv
 from langchain.agents.middleware import (
     ModelCallLimitMiddleware,
+    TodoListMiddleware,
     ToolCallLimitMiddleware,
 )
 from langchain.chat_models import init_chat_model
@@ -29,13 +32,15 @@ from research_deepagent.prompts import (
     SUBAGENT_DELEGATION_INSTRUCTIONS,
 )
 from research_deepagent.tools import (
+    NOTES_ROOT_DEFAULT,
     read_local_note,
     search_local_notes,
     tavily_search,
     think_tool,
 )
 
-load_dotenv()
+# 显式指向项目根 .env：load_dotenv() 按 cwd 找，从别处（如仓库根）调用会读不到
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 SUPPORTED_MODEL_PROVIDERS = {
     "openai": "openai",
@@ -137,6 +142,29 @@ MAX_SUBAGENT_MODEL_CALLS = 30
 MAX_ORCHESTRATOR_MODEL_CALLS = 24
 MAX_ORCHESTRATOR_STEPS = 100
 
+# --- 文件系统后端（2026-09-23 修，ch03 实验结论）-------------------------------
+# 默认的 StateBackend 是 graph state 里的一块虚拟 FS：内置的 ls / glob / grep /
+# read_file 全部只看得到虚拟 FS，看不见磁盘。后果是编排层想核实子代理引用的
+# 本地文件时，glob 永远返回 "No files found"，把正确答案误判成编造。
+#
+# 改用 CompositeBackend 按路径前缀分流：
+#   /notes/  → 真实磁盘的笔记根目录（只读语义由提示词约束，工具本身可写）
+#   其余路径 → 仍留在 StateBackend，保持"草稿纸"的临时语义
+#
+# 为什么不用 FilesystemBackend 直接挂整个仓库根：实测它会把
+# research_deepagent/.env（含真实密钥）一并交给模型，风险不可接受。
+# 挂载后引用笔记必须带 /notes/ 前缀——挂载前缀会替换掉原来的路径语义。
+NOTES_MOUNT = "/notes/"
+NOTES_ROOT = Path(os.getenv("NOTES_ROOT") or NOTES_ROOT_DEFAULT)
+
+
+def _build_backend() -> CompositeBackend:
+    """构造文件系统后端：/notes/ 落真实磁盘，其余留在 state。"""
+    return CompositeBackend(
+        default=StateBackend(),
+        routes={NOTES_MOUNT: FilesystemBackend(root_dir=NOTES_ROOT, virtual_mode=True)},
+    )
+
 current_date = datetime.now().strftime("%Y-%m-%d")
 
 INSTRUCTIONS = (
@@ -207,6 +235,8 @@ graph = create_deep_agent(
     tools=[tavily_search, think_tool],
     system_prompt=INSTRUCTIONS,
     subagents=[research_sub_agent],
+    # 文件系统后端：让内置文件工具能看见 /notes/ 下的真实笔记（见 _build_backend 注释）
+    backend=_build_backend(),
     middleware=[
         # 编排层自保：主 Agent 反复委派 / 反复改写报告时，靠提示词里的
         # 「最多 3 轮委派」是拦不住的，这里给它一个真实的模型调用预算。
@@ -214,6 +244,11 @@ graph = create_deep_agent(
             run_limit=MAX_ORCHESTRATOR_MODEL_CALLS,
             exit_behavior="end",
         ),
+        # 任务规划：v0.7 起不再默认安装，必须显式传入才有 write_todos。
+        # RESEARCH_WORKFLOW_INSTRUCTIONS 第 1 步就要求「先调用 write_todos」，
+        # 缺了它那条指令指向一个不存在的工具（实测报
+        # "write_todos is not a valid tool"）。
+        TodoListMiddleware(),
     ],
 ).with_config(
     # deepagents 与 langchain create_agent 都把 recursion_limit 硬编码为 9999

@@ -2,3 +2,6 @@ node_modules/
 dist/
 .env
 .env.local
+
+# ch04 文档 Agent 的运行时产物（每次跑都会重写，属于输出不属于源码）
+work/
