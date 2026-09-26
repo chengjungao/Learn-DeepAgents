@@ -1,0 +1,8 @@
+{
+  "dependencies": [],
+  "graphs": {
+    "async-supervisor": "./graphs/async_supervisor.py:graph",
+    "async-researcher": "./graphs/async_researcher.py:graph"
+  },
+  "env": "../.env"
+}
